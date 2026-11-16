@@ -1,0 +1,6 @@
+thepid1.log("Executing Runlevel 3 (Reboot)...")
+thepid1.stop_all_daemons()
+thepid1.ffi.C.sync()
+os.execute("/bin/umount -a -r >/dev/null 2>&1")
+thepid1.ffi.C.sync()
+thepid1.ffi.C.reboot(thepid1.REBOOT_MAGIC1, thepid1.REBOOT_MAGIC2, thepid1.CMD_RESTART, nil)

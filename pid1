@@ -1,0 +1,58 @@
+#!/usr/bin/env luajit
+-- /usr/bin/pid1 - CLI client for thepid1.
+local ffi = require("ffi")
+ffi.cdef[[
+unsigned int geteuid(void);
+]]
+local CTL_FIFO = "/run/thepid1.ctl"
+local function usage()
+io.stderr:write([[
+Use:sudo pid1 [OPTIONS]
+OPTIONS:
+--runlevel <0|1|2|3>           Changes the current system to a runlevel without reboot.
+--run --daemon  [...] Executes and supervise an daemon (reinitiate if fails every 1s)
+--run --exec  [...]   Executes an oneshot process.
+]])
+os.exit(1)
+end
+if ffi.C.geteuid() ~= 0 then
+io.stderr:write("Error: 'pid1' requires root perms (use sudo).\n")
+os.exit(1)
+end
+if #arg < 2 then
+usage()
+end
+local payload = nil
+if arg[1] == "--runlevel" then
+local rl = tonumber(arg[2])
+if not rl or rl < 0 or rl > 3 then
+io.stderr:write("Error: Invalid runlevel. Values are: 0, 1, 2, 3.\n")
+os.exit(1)
+end
+payload = "RUNLEVEL " .. rl .. "\n"
+elseif arg[1] == "--run" then
+if #arg < 3 then usage() end
+local mode = arg[2]
+local target = arg[3]
+local extra = ""
+for i = 4, #arg do
+extra = extra .. " " .. arg[i]
+end
+if mode == "--daemon" then
+payload = "DAEMON " .. target .. extra .. "\n"
+elseif mode == "--exec" then
+payload = "EXEC " .. target .. extra .. "\n"
+else
+usage()
+end
+else
+usage()
+end
+local f, err = io.open(CTL_FIFO, "w")
+if not f then
+io.stderr:write("Error: Impossible to connect with /sbin/thepid1 beacuse of: " .. CTL_FIFO .. " (" .. tostring(err) .. ")\n")
+os.exit(1)
+end
+f:write(payload)
+f:flush()
+f:close()

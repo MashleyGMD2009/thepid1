@@ -5,6 +5,13 @@
 local ffi = require("ffi")
 
 ffi.cdef[[
+    int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
+]]
+
+local PR_SET_NAME = 15
+ffi.C.prctl(PR_SET_NAME, ffi.cast("unsigned long", "thepid1"), 0, 0, 0)
+
+ffi.cdef[[
     typedef int pid_t;
     typedef unsigned int mode_t;
     typedef unsigned int uid_t;
